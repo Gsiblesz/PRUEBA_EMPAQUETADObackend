@@ -65,6 +65,42 @@ app.get('/registros', async (req, res) => {
   }
 });
 
+// Endpoint to add a product
+app.post('/addProduct', async (req, res) => {
+  const { codigo, descripcion, unidad, adminKey } = req.body;
+
+  if (!codigo || !descripcion) {
+    return res.status(400).json({ error: 'Faltan codigo o descripcion' });
+  }
+
+  if (adminKey !== 'PASANTIAS90') {
+    return res.status(403).json({ error: 'adminKey inválido' });
+  }
+
+  try {
+    const client = await pool.connect();
+
+    // Check if the product already exists
+    const existing = await client.query('SELECT * FROM productos WHERE LOWER(codigo) = LOWER($1)', [codigo]);
+    if (existing.rows.length > 0) {
+      client.release();
+      return res.status(409).json({ error: 'Código ya existe' });
+    }
+
+    // Insert the new product
+    await client.query(
+      'INSERT INTO productos (codigo, descripcion, unidad) VALUES ($1, $2, $3)',
+      [codigo, descripcion, unidad || 'PAQ']
+    );
+
+    client.release();
+    res.status(201).json({ message: 'Producto agregado exitosamente' });
+  } catch (error) {
+    console.error('Error adding product:', error);
+    res.status(500).json({ error: 'Error al agregar el producto' });
+  }
+});
+
 // Start Server
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
