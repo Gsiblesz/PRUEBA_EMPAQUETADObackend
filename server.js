@@ -51,6 +51,20 @@ app.post('/nuevo-lote', async (req, res) => {
   }
 });
 
+// Endpoint to fetch and display records
+app.get('/registros', async (req, res) => {
+  try {
+    const client = await pool.connect();
+    const result = await client.query('SELECT * FROM productos ORDER BY id DESC');
+    client.release();
+
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error('Error fetching records:', error);
+    res.status(500).json({ error: 'Error fetching records from the database' });
+  }
+});
+
 // Start Server
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
